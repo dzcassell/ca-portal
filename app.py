@@ -12,6 +12,7 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from flask import Flask, Response, render_template, request, send_file
+from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 app = Flask(__name__)
@@ -156,6 +157,18 @@ def ctx() -> dict[str, object]:
     }
 
 
+def fallback_ctx() -> dict[str, object]:
+    return {
+        "portal_name": PORTAL_NAME,
+        "company_name": COMPANY_NAME,
+        "cert_display_name": CERT_DISPLAY_NAME,
+        "support_email": SUPPORT_EMAIL,
+        "verify_url": VERIFY_URL,
+        "base_url": base_url(),
+        "platform_options": PLATFORM_OPTIONS,
+    }
+
+
 @app.route("/")
 def index():
     data = ctx()
@@ -197,6 +210,35 @@ def firefox():
 @app.route("/verify")
 def verify():
     return render_template("verify.html", **ctx())
+
+
+@app.errorhandler(Exception)
+def friendly_error(error):
+    if isinstance(error, HTTPException):
+        status_code = error.code or 500
+        title = error.name
+        detail = error.description
+    else:
+        status_code = 500
+        title = "Verification could not be completed"
+        detail = (
+            "The certificate install was not verified successfully from this page. "
+            "Restart your browser and try the installer again. If this keeps happening, "
+            "contact the helpdesk."
+        )
+        app.logger.exception("Unhandled portal error", exc_info=error)
+
+    return (
+        render_template(
+            "error.html",
+            **fallback_ctx(),
+            status_code=status_code,
+            error_title=title,
+            error_detail=detail,
+            show_install_help=status_code >= 500 or request.path == "/verify",
+        ),
+        status_code,
+    )
 
 
 @app.route("/download/cert")

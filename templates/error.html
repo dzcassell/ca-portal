@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h1>{{ error_title }}</h1>
+  <p class="lede">{{ error_detail }}</p>
+  {% if show_install_help %}
+  <div class="notice">
+    The certificate may not have been installed or trusted successfully on this device.
+  </div>
+  <h2>Try this next</h2>
+  <ol>
+    <li>Close and reopen your browser.</li>
+    <li>Run the installer for your device again.</li>
+    <li>Make sure the certificate was trusted as a root certificate, not just downloaded.</li>
+    <li>Contact the helpdesk if this page still appears.</li>
+  </ol>
+  {% endif %}
+  <div class="actions">
+    <a class="button" href="/">Back to Setup</a>
+    <a class="button secondary" href="mailto:{{ support_email }}">Contact Helpdesk</a>
+  </div>
+</div>
+{% endblock %}

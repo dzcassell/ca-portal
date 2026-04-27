@@ -53,6 +53,31 @@ class PortalSmokeTests(unittest.TestCase):
         self.assertIn("application/x-apple-aspen-config", response.content_type)
         self.assertIn("PayloadType", response.get_data(as_text=True))
 
+    def test_verify_page_explains_failed_verification(self):
+        response = self.client.get("/verify")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn("install did not complete successfully", body)
+        self.assertIn("Contact", body)
+
+    def test_internal_errors_show_helpdesk_page(self):
+        original = app.view_functions["healthz"]
+
+        def broken_healthz():
+            raise RuntimeError("forced test failure")
+
+        app.view_functions["healthz"] = broken_healthz
+        try:
+            response = self.client.get("/healthz")
+        finally:
+            app.view_functions["healthz"] = original
+
+        self.assertEqual(response.status_code, 500)
+        body = response.get_data(as_text=True)
+        self.assertIn("Verification could not be completed", body)
+        self.assertIn("Contact Helpdesk", body)
+
 
 if __name__ == "__main__":
     unittest.main()
