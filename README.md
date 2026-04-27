@@ -67,8 +67,8 @@ http://192.168.40.25:8080/
 Use a friendly DNS name on the onboarding/BYOD VLAN, for example:
 
 ```text
-http://cert.company.local/
-http://byod.company.local/
+http://cert.dcorp.local/
+http://byod.dcorp.local/
 ```
 
 Serve the onboarding page over plain HTTP on the onboarding VLAN, or HTTPS with a publicly trusted certificate. Do **not** serve this portal using the same private/Cato root certificate that users have not installed yet, or you create a certificate trust chicken-and-egg problem.
@@ -82,13 +82,13 @@ The app can be configured with environment variables in `docker-compose.yml` or 
 | `HOST` | `0.0.0.0` | Interface the Flask dev server or Gunicorn binds to |
 | `PORT` | `8080` | Web server port |
 | `PORTAL_NAME` | `Cato BYOD Certificate Setup` | Browser/page title |
-| `COMPANY_NAME` | `Example Company` | Company name shown in UI |
+| `COMPANY_NAME` | `DCorp` | Company name shown in UI |
 | `CERT_DISPLAY_NAME` | `Cato Networks Root CA` | Friendly cert name shown in UI/scripts |
 | `CERT_DIR` | `./certs` locally, `/app/certs` in Docker | Directory containing the certificate |
 | `CERT_FILENAME` | `cato-root-ca.cer` | Certificate file under `CERT_DIR` |
-| `SUPPORT_EMAIL` | `helpdesk@example.com` | Help desk email shown in footer |
-| `VERIFY_URL` | `https://example.com` | HTTPS site users can open to validate behavior |
-| `IOS_PROFILE_IDENTIFIER` | `com.example.cato.rootca` | Payload identifier prefix for mobileconfig |
+| `SUPPORT_EMAIL` | `helpdesk@dcorp.example` | Help desk email shown in footer |
+| `VERIFY_URL` | `https://www.catonetworks.com` | HTTPS site users can open to validate behavior |
+| `IOS_PROFILE_IDENTIFIER` | `com.dcorp.cato.rootca` | Payload identifier prefix for mobileconfig |
 
 Example:
 
@@ -101,9 +101,9 @@ services:
     environment:
       HOST: "0.0.0.0"
       PORT: "8080"
-      COMPANY_NAME: "Acme Corp"
-      SUPPORT_EMAIL: "helpdesk@acme.example"
-      VERIFY_URL: "https://www.example.com"
+      COMPANY_NAME: "DCorp"
+      SUPPORT_EMAIL: "helpdesk@dcorp.example"
+      VERIFY_URL: "https://www.catonetworks.com"
 ```
 
 ## Download endpoints

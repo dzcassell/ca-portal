@@ -24,11 +24,11 @@ CERT_FILENAME = os.getenv("CERT_FILENAME", "cato-root-ca.cer")
 CERT_PATH = CERT_DIR / CERT_FILENAME
 
 PORTAL_NAME = os.getenv("PORTAL_NAME", "Cato BYOD Certificate Setup")
-COMPANY_NAME = os.getenv("COMPANY_NAME", "Example Company")
+COMPANY_NAME = os.getenv("COMPANY_NAME", "DCorp")
 CERT_DISPLAY_NAME = os.getenv("CERT_DISPLAY_NAME", "Cato Networks Root CA")
-SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "helpdesk@example.com")
-VERIFY_URL = os.getenv("VERIFY_URL", "https://example.com")
-IOS_PROFILE_IDENTIFIER = os.getenv("IOS_PROFILE_IDENTIFIER", "com.example.cato.rootca")
+SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "helpdesk@dcorp.example")
+VERIFY_URL = os.getenv("VERIFY_URL", "https://www.catonetworks.com")
+IOS_PROFILE_IDENTIFIER = os.getenv("IOS_PROFILE_IDENTIFIER", "com.dcorp.cato.rootca")
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8080"))
 
@@ -260,7 +260,7 @@ def healthz():
 @app.route("/download/windows.ps1")
 def windows_script():
     script = f"""
-    # Installs the Cato/company TLS inspection root certificate into the
+    # Installs the DCorp/Cato TLS inspection root certificate into the
     # Local Computer Trusted Root Certification Authorities store.
     # This is explicit and user-visible; it does not attempt stealth installation.
 
@@ -392,7 +392,7 @@ def linux_script():
     CERT_URL="{base_url()}/download/cert"
     EXPECTED_SHA256="{cert_sha256_hex().lower()}"
     OPENSSL_INFORM="{cert_openssl_inform()}"
-    CERT_NAME="company-cato-root-ca.crt"
+    CERT_NAME="dcorp-cato-root-ca.crt"
     TMP_CERT="/tmp/{CERT_FILENAME}"
     PEM_CERT="/tmp/${{CERT_NAME}}"
 
@@ -495,7 +495,7 @@ def mobileconfig():
         {wrapped_b64}
       </data>
       <key>PayloadDescription</key>
-      <string>Installs the company TLS inspection root certificate.</string>
+      <string>Installs the DCorp TLS inspection root certificate.</string>
       <key>PayloadDisplayName</key>
       <string>{display}</string>
       <key>PayloadIdentifier</key>
@@ -509,7 +509,7 @@ def mobileconfig():
     </dict>
   </array>
   <key>PayloadDescription</key>
-  <string>Installs the company certificate used for TLS inspection on the BYOD network.</string>
+  <string>Installs the DCorp certificate used for TLS inspection on the BYOD network.</string>
   <key>PayloadDisplayName</key>
   <string>{org} BYOD Certificate Setup</string>
   <key>PayloadIdentifier</key>

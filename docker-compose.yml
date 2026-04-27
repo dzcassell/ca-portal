@@ -9,11 +9,11 @@ services:
       HOST: "0.0.0.0"
       PORT: "8080"
       PORTAL_NAME: "Cato BYOD Certificate Setup"
-      COMPANY_NAME: "Example Company"
+      COMPANY_NAME: "DCorp"
       CERT_DISPLAY_NAME: "Cato Networks Root CA"
       CERT_FILENAME: "cato-root-ca.cer"
-      SUPPORT_EMAIL: "helpdesk@example.com"
-      VERIFY_URL: "https://example.com"
-      IOS_PROFILE_IDENTIFIER: "com.example.cato.rootca"
+      SUPPORT_EMAIL: "helpdesk@dcorp.example"
+      VERIFY_URL: "https://www.catonetworks.com"
+      IOS_PROFILE_IDENTIFIER: "com.dcorp.cato.rootca"
     volumes:
       - ./certs:/app/certs:ro
