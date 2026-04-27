@@ -110,6 +110,7 @@ services:
 
 ```text
 /download/cert
+/download/windows.cmd
 /download/windows.ps1
 /download/macos.sh
 /download/linux.sh
@@ -122,6 +123,8 @@ Script downloads are generated dynamically so the install helpers use the same b
 ## Platform notes
 
 ### Windows
+
+The primary Windows download is `windows.cmd`, a small bootstrapper that downloads and runs the PowerShell helper from this portal. This gives users a familiar double-click flow while keeping the certificate verification and install logic in the generated PowerShell script.
 
 The PowerShell helper downloads the certificate, verifies the SHA-256 fingerprint, and imports the certificate into the current user's Trusted Root Certification Authorities store.
 

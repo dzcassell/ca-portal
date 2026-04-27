@@ -16,7 +16,7 @@ class PortalSmokeTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
         self.assertIn("BYOD Certificate Setup", body)
-        self.assertIn("Download Windows Helper", body)
+        self.assertIn("Download Windows Installer", body)
         self.assertIn("SHA-256 fingerprint", body)
 
     def test_healthz_loads_certificate(self):
@@ -29,6 +29,7 @@ class PortalSmokeTests(unittest.TestCase):
         expected = cert_sha256_hex()
 
         for path in (
+            "/download/windows.cmd",
             "/download/windows.ps1",
             "/download/macos.sh",
             "/download/linux.sh",
@@ -39,7 +40,10 @@ class PortalSmokeTests(unittest.TestCase):
                 body = response.get_data(as_text=True)
 
                 self.assertEqual(response.status_code, 200)
-                self.assertIn(expected.lower(), body.lower())
+                if path.endswith(".cmd"):
+                    self.assertIn("/download/windows.ps1", body)
+                else:
+                    self.assertIn(expected.lower(), body.lower())
                 self.assertIn("attachment", response.headers["Content-Disposition"])
 
     def test_mobileconfig_downloads_profile(self):

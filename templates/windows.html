@@ -2,12 +2,19 @@
 {% block content %}
 <div class="card">
   <h1>Windows setup</h1>
-  <p class="lede">Use the helper for the fastest path. It downloads this portal's certificate, verifies the certificate fingerprint, and imports it into your current user's Trusted Root store.</p>
+  <p class="lede">Use the Windows installer for the fastest path. It downloads this portal's PowerShell helper, verifies the certificate fingerprint, imports the certificate into your current user's Trusted Root store, and opens the verification page.</p>
   <div class="actions">
-    <a class="button" href="/download/windows.ps1">Download PowerShell Helper</a>
+    <a class="button" href="/download/windows.cmd">Download Windows Installer</a>
+    <a class="button secondary" href="/download/windows.ps1">Download PowerShell Helper</a>
     <a class="button secondary" href="/download/cert">Download Certificate Only</a>
   </div>
-  <h2>Helper install</h2>
+  <h2>Installer</h2>
+  <ol>
+    <li>Download the Windows installer.</li>
+    <li>Open the downloaded <code>windows.cmd</code> file.</li>
+    <li>Approve the Windows prompts.</li>
+  </ol>
+  <h2>PowerShell helper</h2>
   <pre>powershell -ExecutionPolicy Bypass -File .\windows.ps1</pre>
   <h2>Manual install</h2>
   <ol>

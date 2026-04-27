@@ -35,8 +35,8 @@ PLATFORM_OPTIONS = {
     "windows": {
         "label": "Windows",
         "path": "/windows",
-        "primary_url": "/download/windows.ps1",
-        "primary_label": "Download Windows Helper",
+        "primary_url": "/download/windows.cmd",
+        "primary_label": "Download Windows Installer",
     },
     "macos": {
         "label": "macOS",
@@ -246,8 +246,46 @@ def windows_script():
     Write-Host "Installing certificate into CurrentUser Trusted Root store..."
     Import-Certificate -FilePath $CertPath -CertStoreLocation $StoreLocation | Out-Null
     Write-Host "Done. Restart your browser."
+    Write-Host "Opening verification page..."
+    Start-Process "{base_url()}/verify"
     """
     return script_response(script, "windows.ps1")
+
+
+@app.route("/download/windows.cmd")
+def windows_cmd():
+    script = f"""
+    @echo off
+    setlocal
+
+    set "SCRIPT_URL={base_url()}/download/windows.ps1"
+    set "SCRIPT_PATH=%TEMP%\\cato-cert-install.ps1"
+
+    echo Downloading the Windows certificate installer...
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri '%SCRIPT_URL%' -OutFile '%SCRIPT_PATH%'"
+    if errorlevel 1 (
+      echo.
+      echo Download failed. Check that you are connected to the onboarding network.
+      pause
+      exit /b 1
+    )
+
+    echo Running the certificate installer...
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_PATH%"
+    set "INSTALL_RESULT=%ERRORLEVEL%"
+
+    echo.
+    if not "%INSTALL_RESULT%"=="0" (
+      echo Install failed. Leave this window open and contact support: {SUPPORT_EMAIL}
+      pause
+      exit /b %INSTALL_RESULT%
+    )
+
+    echo Certificate install completed.
+    echo Restart browsers that were already open.
+    pause
+    """
+    return script_response(script, "windows.cmd")
 
 
 @app.route("/download/macos.sh")
