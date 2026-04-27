@@ -1,0 +1,3 @@
+{% extends "base.html" %}{% block content %}
+<div class="card"><h1>Linux setup</h1><p><a class="button" href="/download/cert">Download Certificate</a><a class="button secondary" href="/download/linux.sh">Download Linux Helper</a></p><pre>chmod +x linux.sh
+sudo ./linux.sh</pre><p>The helper supports Debian/Ubuntu-style <code>update-ca-certificates</code> and RHEL/Fedora-style <code>update-ca-trust</code>.</p></div>{% include "_cert_card.html" %}{% endblock %}

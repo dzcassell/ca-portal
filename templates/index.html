@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h1>{{ company_name }} BYOD Certificate Setup</h1>
+  <p>To use this network without certificate warnings, your device needs to trust the <strong>{{ cert_display_name }}</strong> certificate.</p>
+  <div class="notice">Installing this certificate allows {{ company_name }} security systems to inspect encrypted web traffic on this network. Only install it if you understand and agree to this for corporate/BYOD network use.</div>
+  {% if platform_hint != "unknown" %}<p><strong>Detected platform:</strong> {{ platform_hint|capitalize }}</p>{% endif %}
+  <p><a class="button" href="/download/cert">Download Certificate</a><a class="button secondary" href="/verify">Verify Setup</a></p>
+</div>
+{% include "_cert_card.html" %}
+<div class="card">
+  <h2>Choose your device type</h2>
+  <div class="grid">
+    <a class="button secondary" href="/windows">Windows</a>
+    <a class="button secondary" href="/macos">macOS</a>
+    <a class="button secondary" href="/ios">iPhone / iPad</a>
+    <a class="button secondary" href="/android">Android</a>
+    <a class="button secondary" href="/linux">Linux</a>
+    <a class="button secondary" href="/firefox">Firefox</a>
+  </div>
+</div>
+{% endblock %}

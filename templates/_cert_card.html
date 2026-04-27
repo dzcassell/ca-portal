@@ -1,0 +1,12 @@
+<div class="card">
+  <h2>Certificate verification</h2>
+  <p>Before installing, verify the certificate details below. This prevents the classic “downloaded the mystery certificate from Bob’s van Wi-Fi” problem.</p>
+  <ul>
+    <li><strong>Subject:</strong> {{ cert_info.subject }}</li>
+    <li><strong>Issuer:</strong> {{ cert_info.issuer }}</li>
+    <li><strong>Valid until:</strong> {{ cert_info.not_after }}</li>
+    <li><strong>Serial:</strong> <span class="fingerprint">{{ cert_info.serial }}</span></li>
+  </ul>
+  <p><strong>SHA-256 fingerprint:</strong></p>
+  <p class="fingerprint">{{ cert_info.sha256 }}</p>
+</div>
