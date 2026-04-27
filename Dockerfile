@@ -14,4 +14,5 @@ RUN useradd -r -u 10001 appuser && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8080
-CMD ["gunicorn", "-b", "0.0.0.0:8080", "app:app"]
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 CMD python -c "import os, urllib.request; urllib.request.urlopen(f'http://127.0.0.1:{os.getenv(\"PORT\", \"8080\")}/healthz', timeout=2).read()" || exit 1
+CMD ["sh", "-c", "gunicorn -b ${HOST:-0.0.0.0}:${PORT:-8080} app:app"]

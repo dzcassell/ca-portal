@@ -12,10 +12,13 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from flask import Flask, Response, render_template, request, send_file
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
-CERT_DIR = Path(os.getenv("CERT_DIR", "/app/certs"))
+APP_DIR = Path(__file__).resolve().parent
+CERT_DIR = Path(os.getenv("CERT_DIR", APP_DIR / "certs"))
 CERT_FILENAME = os.getenv("CERT_FILENAME", "cato-root-ca.cer")
 CERT_PATH = CERT_DIR / CERT_FILENAME
 
@@ -25,10 +28,57 @@ CERT_DISPLAY_NAME = os.getenv("CERT_DISPLAY_NAME", "Cato Networks Root CA")
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "helpdesk@example.com")
 VERIFY_URL = os.getenv("VERIFY_URL", "https://example.com")
 IOS_PROFILE_IDENTIFIER = os.getenv("IOS_PROFILE_IDENTIFIER", "com.example.cato.rootca")
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", "8080"))
+
+PLATFORM_OPTIONS = {
+    "windows": {
+        "label": "Windows",
+        "path": "/windows",
+        "primary_url": "/download/windows.ps1",
+        "primary_label": "Download Windows Helper",
+    },
+    "macos": {
+        "label": "macOS",
+        "path": "/macos",
+        "primary_url": "/download/macos.sh",
+        "primary_label": "Download macOS Helper",
+    },
+    "ios": {
+        "label": "iPhone / iPad",
+        "path": "/ios",
+        "primary_url": "/download/mobileconfig",
+        "primary_label": "Download Configuration Profile",
+    },
+    "android": {
+        "label": "Android",
+        "path": "/android",
+        "primary_url": "/download/cert",
+        "primary_label": "Download Certificate",
+    },
+    "linux": {
+        "label": "Linux",
+        "path": "/linux",
+        "primary_url": "/download/linux.sh",
+        "primary_label": "Download Linux Helper",
+    },
+    "firefox": {
+        "label": "Firefox",
+        "path": "/firefox",
+        "primary_url": "/download/firefox.sh",
+        "primary_label": "Download Firefox Helper",
+    },
+}
 
 
 def load_cert_bytes() -> bytes:
     return CERT_PATH.read_bytes()
+
+
+def cert_openssl_inform() -> str:
+    if load_cert_bytes().lstrip().startswith(b"-----BEGIN"):
+        return "PEM"
+    return "DER"
 
 
 def load_cert() -> x509.Certificate:
@@ -42,6 +92,10 @@ def load_cert() -> x509.Certificate:
 def cert_der_bytes() -> bytes:
     cert = load_cert()
     return cert.public_bytes(serialization.Encoding.DER)
+
+
+def cert_sha256_hex() -> str:
+    return hashlib.sha256(cert_der_bytes()).hexdigest().upper()
 
 
 def colon_fingerprint(raw_digest: bytes) -> str:
@@ -81,6 +135,14 @@ def base_url() -> str:
     return request.url_root.rstrip("/")
 
 
+def script_response(script: str, filename: str) -> Response:
+    return Response(
+        textwrap.dedent(script).lstrip(),
+        mimetype="text/plain; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 def ctx() -> dict[str, object]:
     return {
         "portal_name": PORTAL_NAME,
@@ -90,6 +152,7 @@ def ctx() -> dict[str, object]:
         "verify_url": VERIFY_URL,
         "cert_info": cert_info(),
         "base_url": base_url(),
+        "platform_options": PLATFORM_OPTIONS,
     }
 
 
@@ -97,6 +160,7 @@ def ctx() -> dict[str, object]:
 def index():
     data = ctx()
     data["platform_hint"] = platform_hint(request.headers.get("User-Agent", ""))
+    data["detected_platform"] = PLATFORM_OPTIONS.get(data["platform_hint"])
     return render_template("index.html", **data)
 
 
@@ -145,6 +209,12 @@ def download_cert():
     )
 
 
+@app.route("/healthz")
+def healthz():
+    load_cert()
+    return {"status": "ok", "certificate": CERT_FILENAME}
+
+
 @app.route("/download/windows.ps1")
 def windows_script():
     script = f"""
@@ -154,19 +224,20 @@ def windows_script():
 
     $ErrorActionPreference = "Stop"
     $CertUrl = "{base_url()}/download/cert"
-    $ExpectedSha256 = "{cert_info()['sha256'].replace(':', '').upper()}"
+    $ExpectedSha256 = "{cert_sha256_hex()}"
     $CertPath = Join-Path $env:TEMP "{CERT_FILENAME}"
     $StoreLocation = "Cert:\\CurrentUser\\Root"
 
     Write-Host "Downloading certificate from $CertUrl ..."
     Invoke-WebRequest -Uri $CertUrl -OutFile $CertPath
 
-    $ActualSha256 = (Get-FileHash -Algorithm SHA256 -Path $CertPath).Hash.ToUpper()
+    $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($CertPath)
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    $ActualSha256 = [BitConverter]::ToString($sha256.ComputeHash($cert.RawData)).Replace("-", "").ToUpper()
     if ($ActualSha256 -ne $ExpectedSha256) {{
       throw "SHA-256 fingerprint mismatch. Expected $ExpectedSha256 but got $ActualSha256."
     }}
 
-    $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($CertPath)
     Write-Host "Subject:    $($cert.Subject)"
     Write-Host "Issuer:     $($cert.Issuer)"
     Write-Host "Thumbprint: $($cert.Thumbprint)"
@@ -176,7 +247,7 @@ def windows_script():
     Import-Certificate -FilePath $CertPath -CertStoreLocation $StoreLocation | Out-Null
     Write-Host "Done. Restart your browser."
     """
-    return Response(textwrap.dedent(script).lstrip(), mimetype="text/plain")
+    return script_response(script, "windows.ps1")
 
 
 @app.route("/download/macos.sh")
@@ -186,7 +257,8 @@ def macos_script():
     set -euo pipefail
 
     CERT_URL="{base_url()}/download/cert"
-    EXPECTED_SHA256="{cert_info()['sha256'].replace(':', '').lower()}"
+    EXPECTED_SHA256="{cert_sha256_hex().lower()}"
+    OPENSSL_INFORM="{cert_openssl_inform()}"
     CERT_PATH="/tmp/{CERT_FILENAME}"
 
     if [[ $EUID -ne 0 ]]; then
@@ -197,7 +269,7 @@ def macos_script():
     echo "Downloading certificate from ${{CERT_URL}} ..."
     curl -fsSL "${{CERT_URL}}" -o "${{CERT_PATH}}"
 
-    ACTUAL_SHA256="$(shasum -a 256 "${{CERT_PATH}}" | awk '{{print tolower($1)}}')"
+    ACTUAL_SHA256="$(openssl x509 -inform "${{OPENSSL_INFORM}}" -in "${{CERT_PATH}}" -outform DER | openssl dgst -sha256 -binary | od -An -tx1 | tr -d ' \\n')"
     if [[ "${{ACTUAL_SHA256}}" != "${{EXPECTED_SHA256}}" ]]; then
       echo "SHA-256 fingerprint mismatch. Refusing to install."
       echo "Expected: ${{EXPECTED_SHA256}}"
@@ -205,13 +277,13 @@ def macos_script():
       exit 1
     fi
 
-    openssl x509 -in "${{CERT_PATH}}" -noout -subject -issuer -fingerprint -sha256 -dates
+    openssl x509 -inform "${{OPENSSL_INFORM}}" -in "${{CERT_PATH}}" -noout -subject -issuer -fingerprint -sha256 -dates
 
     echo "Installing and trusting certificate in System keychain..."
     security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "${{CERT_PATH}}"
     echo "Done. Restart browsers that were already open."
     """
-    return Response(textwrap.dedent(script).lstrip(), mimetype="text/x-shellscript")
+    return script_response(script, "macos.sh")
 
 
 @app.route("/download/linux.sh")
@@ -221,9 +293,11 @@ def linux_script():
     set -euo pipefail
 
     CERT_URL="{base_url()}/download/cert"
-    EXPECTED_SHA256="{cert_info()['sha256'].replace(':', '').lower()}"
+    EXPECTED_SHA256="{cert_sha256_hex().lower()}"
+    OPENSSL_INFORM="{cert_openssl_inform()}"
     CERT_NAME="company-cato-root-ca.crt"
-    TMP_CERT="/tmp/${{CERT_NAME}}"
+    TMP_CERT="/tmp/{CERT_FILENAME}"
+    PEM_CERT="/tmp/${{CERT_NAME}}"
 
     if [[ $EUID -ne 0 ]]; then
       echo "Please run with sudo."
@@ -231,19 +305,20 @@ def linux_script():
     fi
 
     curl -fsSL "${{CERT_URL}}" -o "${{TMP_CERT}}"
-    ACTUAL_SHA256="$(sha256sum "${{TMP_CERT}}" | awk '{{print tolower($1)}}')"
+    ACTUAL_SHA256="$(openssl x509 -inform "${{OPENSSL_INFORM}}" -in "${{TMP_CERT}}" -outform DER | openssl dgst -sha256 -binary | od -An -tx1 | tr -d ' \\n')"
     if [[ "${{ACTUAL_SHA256}}" != "${{EXPECTED_SHA256}}" ]]; then
       echo "SHA-256 fingerprint mismatch. Refusing to install."
       exit 1
     fi
 
-    openssl x509 -in "${{TMP_CERT}}" -noout -subject -issuer -fingerprint -sha256 -dates
+    openssl x509 -inform "${{OPENSSL_INFORM}}" -in "${{TMP_CERT}}" -noout -subject -issuer -fingerprint -sha256 -dates
+    openssl x509 -inform "${{OPENSSL_INFORM}}" -in "${{TMP_CERT}}" -out "${{PEM_CERT}}"
 
     if [[ -d /usr/local/share/ca-certificates ]]; then
-      cp "${{TMP_CERT}}" "/usr/local/share/ca-certificates/${{CERT_NAME}}"
+      cp "${{PEM_CERT}}" "/usr/local/share/ca-certificates/${{CERT_NAME}}"
       update-ca-certificates
     elif [[ -d /etc/pki/ca-trust/source/anchors ]]; then
-      cp "${{TMP_CERT}}" "/etc/pki/ca-trust/source/anchors/${{CERT_NAME}}"
+      cp "${{PEM_CERT}}" "/etc/pki/ca-trust/source/anchors/${{CERT_NAME}}"
       update-ca-trust
     else
       echo "Unsupported Linux CA trust layout. Install manually."
@@ -252,7 +327,7 @@ def linux_script():
 
     echo "Done. Restart browsers/apps that were open."
     """
-    return Response(textwrap.dedent(script).lstrip(), mimetype="text/x-shellscript")
+    return script_response(script, "linux.sh")
 
 
 @app.route("/download/firefox.sh")
@@ -262,7 +337,8 @@ def firefox_script():
     set -euo pipefail
 
     CERT_URL="{base_url()}/download/cert"
-    EXPECTED_SHA256="{cert_info()['sha256'].replace(':', '').lower()}"
+    EXPECTED_SHA256="{cert_sha256_hex().lower()}"
+    OPENSSL_INFORM="{cert_openssl_inform()}"
     CERT_PATH="/tmp/{CERT_FILENAME}"
     CERT_NICKNAME="{CERT_DISPLAY_NAME}"
 
@@ -274,11 +350,7 @@ def firefox_script():
     fi
 
     curl -fsSL "${{CERT_URL}}" -o "${{CERT_PATH}}"
-    if command -v sha256sum >/dev/null 2>&1; then
-      ACTUAL_SHA256="$(sha256sum "${{CERT_PATH}}" | awk '{{print tolower($1)}}')"
-    else
-      ACTUAL_SHA256="$(shasum -a 256 "${{CERT_PATH}}" | awk '{{print tolower($1)}}')"
-    fi
+    ACTUAL_SHA256="$(openssl x509 -inform "${{OPENSSL_INFORM}}" -in "${{CERT_PATH}}" -outform DER | openssl dgst -sha256 -binary | od -An -tx1 | tr -d ' \\n')"
 
     if [[ "${{ACTUAL_SHA256}}" != "${{EXPECTED_SHA256}}" ]]; then
       echo "SHA-256 fingerprint mismatch. Refusing to install."
@@ -286,7 +358,7 @@ def firefox_script():
     fi
 
     found=0
-    for profile in "$HOME"/.mozilla/firefox/*.default* "$HOME"/Library/Application\ Support/Firefox/Profiles/*.default*; do
+    for profile in "$HOME"/.mozilla/firefox/*.default* "$HOME"/Library/Application\\ Support/Firefox/Profiles/*.default*; do
       if [[ -d "$profile" ]]; then
         found=1
         echo "Installing certificate into Firefox profile: $profile"
@@ -300,7 +372,7 @@ def firefox_script():
 
     echo "Done. Restart Firefox."
     """
-    return Response(textwrap.dedent(script).lstrip(), mimetype="text/x-shellscript")
+    return script_response(script, "firefox.sh")
 
 
 @app.route("/download/mobileconfig")
@@ -375,4 +447,4 @@ def security_headers(response: Response):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host=HOST, port=PORT)

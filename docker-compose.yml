@@ -4,8 +4,10 @@ services:
     container_name: byod-cert-portal
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "0.0.0.0:8080:8080"
     environment:
+      HOST: "0.0.0.0"
+      PORT: "8080"
       PORTAL_NAME: "Cato BYOD Certificate Setup"
       COMPANY_NAME: "Example Company"
       CERT_DISPLAY_NAME: "Cato Networks Root CA"

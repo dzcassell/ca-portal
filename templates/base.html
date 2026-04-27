@@ -5,16 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ portal_name }}</title>
   <style>
-    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: #f5f7fb; color: #172033; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 32px 20px; }
-    .card { background: #fff; border-radius: 18px; padding: 28px; box-shadow: 0 12px 40px rgba(18,32,51,.08); margin-bottom: 20px; }
-    h1 { margin-top: 0; font-size: 2rem; } h2 { margin-top: 1.5rem; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 14px; }
-    .button { display: inline-block; padding: 12px 16px; border-radius: 12px; background: #172033; color: white; text-decoration: none; font-weight: 700; margin: 4px 6px 4px 0; }
-    .secondary { background: #e9eef8; color: #172033; }
-    code, pre { background: #101828; color: #f8fafc; border-radius: 12px; } code { padding: 2px 6px; } pre { padding: 16px; overflow: auto; }
-    .notice { border-left: 5px solid #d97706; padding: 12px 16px; background: #fff7ed; border-radius: 12px; }
-    .ok { border-left-color: #059669; background: #ecfdf5; }
+    :root { color-scheme: light; --ink: #18202f; --muted: #5b6475; --line: #d8dfeb; --panel: #fff; --action: #14532d; --action-2: #243044; --warn: #9a3412; --warn-bg: #fff7ed; }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: #f5f7fb; color: var(--ink); }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 28px 18px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; box-shadow: 0 10px 30px rgba(24,32,47,.07); margin-bottom: 18px; }
+    h1 { margin: 0 0 12px; font-size: 2rem; line-height: 1.1; } h2 { margin-top: 1.4rem; }
+    .lede { color: var(--muted); font-size: 1.08rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: 12px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .button { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 12px 16px; border-radius: 8px; background: var(--action); color: white; text-decoration: none; font-weight: 700; }
+    .secondary { background: #e8edf5; color: var(--action-2); }
+    .button:hover { filter: brightness(.96); }
+    code, pre { background: #111827; color: #f8fafc; border-radius: 8px; } code { padding: 2px 6px; } pre { padding: 16px; overflow: auto; }
+    .notice { border-left: 5px solid var(--warn); padding: 12px 16px; background: var(--warn-bg); border-radius: 8px; }
+    .ok { border-left-color: #047857; background: #ecfdf5; }
+    .detected { border: 1px solid #b7dcc8; background: #f0fdf4; border-radius: 8px; padding: 14px 16px; margin-top: 16px; }
     .fingerprint { overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .95rem; }
     li { margin: .45rem 0; }
     footer { color: #667085; font-size: .9rem; }

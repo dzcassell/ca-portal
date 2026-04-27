@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 .env
 .venv/
+.codex-deps/
 .DS_Store
 .pytest_cache/
 *.log

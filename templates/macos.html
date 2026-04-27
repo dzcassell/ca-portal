@@ -1,3 +1,24 @@
-{% extends "base.html" %}{% block content %}
-<div class="card"><h1>macOS setup</h1><div class="notice">macOS requires user approval before trusting a root certificate.</div><p><a class="button" href="/download/cert">Download Certificate</a><a class="button secondary" href="/download/macos.sh">Download macOS Helper</a></p><ol><li>Download the certificate.</li><li>Open <strong>Keychain Access</strong>.</li><li>Select the <strong>System</strong> keychain.</li><li>Import the certificate.</li><li>Open it, expand <strong>Trust</strong>, and set it to <strong>Always Trust</strong>.</li><li>Restart your browser.</li></ol><h2>Scripted install</h2><pre>chmod +x macos.sh
-sudo ./macos.sh</pre></div>{% include "_cert_card.html" %}{% endblock %}
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h1>macOS setup</h1>
+  <div class="notice">macOS requires administrator approval before trusting a root certificate.</div>
+  <div class="actions">
+    <a class="button" href="/download/macos.sh">Download macOS Helper</a>
+    <a class="button secondary" href="/download/cert">Download Certificate Only</a>
+  </div>
+  <h2>Helper install</h2>
+  <pre>chmod +x macos.sh
+sudo ./macos.sh</pre>
+  <h2>Manual install</h2>
+  <ol>
+    <li>Download the certificate.</li>
+    <li>Open <strong>Keychain Access</strong>.</li>
+    <li>Select the <strong>System</strong> keychain.</li>
+    <li>Import the certificate.</li>
+    <li>Open it, expand <strong>Trust</strong>, and set it to <strong>Always Trust</strong>.</li>
+    <li>Restart your browser.</li>
+  </ol>
+</div>
+{% include "_cert_card.html" %}
+{% endblock %}

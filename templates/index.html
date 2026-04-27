@@ -2,21 +2,31 @@
 {% block content %}
 <div class="card">
   <h1>{{ company_name }} BYOD Certificate Setup</h1>
-  <p>To use this network without certificate warnings, your device needs to trust the <strong>{{ cert_display_name }}</strong> certificate.</p>
+  <p class="lede">To use this network without certificate warnings, your device needs to trust the <strong>{{ cert_display_name }}</strong> certificate.</p>
   <div class="notice">Installing this certificate allows {{ company_name }} security systems to inspect encrypted web traffic on this network. Only install it if you understand and agree to this for corporate/BYOD network use.</div>
-  {% if platform_hint != "unknown" %}<p><strong>Detected platform:</strong> {{ platform_hint|capitalize }}</p>{% endif %}
-  <p><a class="button" href="/download/cert">Download Certificate</a><a class="button secondary" href="/verify">Verify Setup</a></p>
+  {% if detected_platform %}
+  <div class="detected">
+    <strong>Detected platform:</strong> {{ detected_platform.label }}
+    <div class="actions">
+      <a class="button" href="{{ detected_platform.primary_url }}">{{ detected_platform.primary_label }}</a>
+      <a class="button secondary" href="{{ detected_platform.path }}">View Steps</a>
+      <a class="button secondary" href="/verify">Verify Setup</a>
+    </div>
+  </div>
+  {% else %}
+  <div class="actions">
+    <a class="button" href="/download/cert">Download Certificate</a>
+    <a class="button secondary" href="/verify">Verify Setup</a>
+  </div>
+  {% endif %}
 </div>
 {% include "_cert_card.html" %}
 <div class="card">
   <h2>Choose your device type</h2>
   <div class="grid">
-    <a class="button secondary" href="/windows">Windows</a>
-    <a class="button secondary" href="/macos">macOS</a>
-    <a class="button secondary" href="/ios">iPhone / iPad</a>
-    <a class="button secondary" href="/android">Android</a>
-    <a class="button secondary" href="/linux">Linux</a>
-    <a class="button secondary" href="/firefox">Firefox</a>
+    {% for option in platform_options.values() %}
+    <a class="button secondary" href="{{ option.path }}">{{ option.label }}</a>
+    {% endfor %}
   </div>
 </div>
 {% endblock %}

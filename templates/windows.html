@@ -1,2 +1,24 @@
-{% extends "base.html" %}{% block content %}
-<div class="card"><h1>Windows setup</h1><p>Install into the current user's Trusted Root Certification Authorities store.</p><p><a class="button" href="/download/cert">Download Certificate</a><a class="button secondary" href="/download/windows.ps1">Download PowerShell Helper</a></p><ol><li>Download the certificate.</li><li>Double-click the file.</li><li>Select <strong>Install Certificate</strong>.</li><li>Choose <strong>Current User</strong>.</li><li>Select <strong>Place all certificates in the following store</strong>.</li><li>Choose <strong>Trusted Root Certification Authorities</strong>.</li><li>Finish and accept the security warning.</li></ol><h2>PowerShell helper</h2><pre>powershell -ExecutionPolicy Bypass -File .\windows.ps1</pre></div>{% include "_cert_card.html" %}{% endblock %}
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h1>Windows setup</h1>
+  <p class="lede">Use the helper for the fastest path. It downloads this portal's certificate, verifies the certificate fingerprint, and imports it into your current user's Trusted Root store.</p>
+  <div class="actions">
+    <a class="button" href="/download/windows.ps1">Download PowerShell Helper</a>
+    <a class="button secondary" href="/download/cert">Download Certificate Only</a>
+  </div>
+  <h2>Helper install</h2>
+  <pre>powershell -ExecutionPolicy Bypass -File .\windows.ps1</pre>
+  <h2>Manual install</h2>
+  <ol>
+    <li>Download the certificate.</li>
+    <li>Double-click the file.</li>
+    <li>Select <strong>Install Certificate</strong>.</li>
+    <li>Choose <strong>Current User</strong>.</li>
+    <li>Select <strong>Place all certificates in the following store</strong>.</li>
+    <li>Choose <strong>Trusted Root Certification Authorities</strong>.</li>
+    <li>Finish and accept the security warning.</li>
+  </ol>
+</div>
+{% include "_cert_card.html" %}
+{% endblock %}

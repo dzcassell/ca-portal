@@ -10,6 +10,7 @@ The portal hosts the bundled Cato root certificate, displays certificate metadat
 - Displays certificate subject, issuer, validity dates, serial number, SHA-1, and SHA-256 fingerprint
 - Generates helper scripts dynamically using the hostname/IP the user actually visited
 - Validates certificate SHA-256 fingerprint before helper scripts install anything
+- Detects common client platforms and puts the recommended download first
 - Provides installation guidance for:
   - Windows
   - macOS
@@ -19,6 +20,7 @@ The portal hosts the bundled Cato root certificate, displays certificate metadat
   - Firefox
 - Generates an Apple `.mobileconfig` profile dynamically for iOS/iPadOS/macOS
 - Runs as a small Flask app in Docker
+- Listens on all interfaces by default for LAN onboarding
 
 ## Bundled certificate
 
@@ -42,7 +44,13 @@ The app computes certificate details at runtime from the actual certificate file
 docker compose up -d --build
 ```
 
-Open:
+The compose file publishes the portal on all host interfaces:
+
+```text
+0.0.0.0:8080 -> container port 8080
+```
+
+Open the portal from a BYOD device on the same LAN:
 
 ```text
 http://<server-ip>:8080/
@@ -71,10 +79,13 @@ The app can be configured with environment variables in `docker-compose.yml` or 
 
 | Variable | Default | Purpose |
 |---|---|---|
+| `HOST` | `0.0.0.0` | Interface the Flask dev server or Gunicorn binds to |
+| `PORT` | `8080` | Web server port |
 | `PORTAL_NAME` | `Cato BYOD Certificate Setup` | Browser/page title |
 | `COMPANY_NAME` | `Example Company` | Company name shown in UI |
 | `CERT_DISPLAY_NAME` | `Cato Networks Root CA` | Friendly cert name shown in UI/scripts |
-| `CERT_FILENAME` | `cato-root-ca.cer` | Certificate file under `/app/certs` |
+| `CERT_DIR` | `./certs` locally, `/app/certs` in Docker | Directory containing the certificate |
+| `CERT_FILENAME` | `cato-root-ca.cer` | Certificate file under `CERT_DIR` |
 | `SUPPORT_EMAIL` | `helpdesk@example.com` | Help desk email shown in footer |
 | `VERIFY_URL` | `https://example.com` | HTTPS site users can open to validate behavior |
 | `IOS_PROFILE_IDENTIFIER` | `com.example.cato.rootca` | Payload identifier prefix for mobileconfig |
@@ -86,8 +97,10 @@ services:
   ca-portal:
     build: .
     ports:
-      - "8080:8080"
+      - "0.0.0.0:8080:8080"
     environment:
+      HOST: "0.0.0.0"
+      PORT: "8080"
       COMPANY_NAME: "Acme Corp"
       SUPPORT_EMAIL: "helpdesk@acme.example"
       VERIFY_URL: "https://www.example.com"
@@ -157,13 +170,25 @@ Recommended policy model:
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
-CERT_DIR=./certs python app.py
+python app.py
 ```
 
 Then open:
 
 ```text
 http://127.0.0.1:8080/
+```
+
+For LAN testing from another device, open:
+
+```text
+http://<your-computer-ip>:8080/
+```
+
+The app exposes a container-friendly health endpoint:
+
+```text
+/healthz
 ```
 
 ## Publish to GitHub

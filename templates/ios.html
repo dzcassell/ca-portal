@@ -1,2 +1,21 @@
-{% extends "base.html" %}{% block content %}
-<div class="card"><h1>iPhone / iPad setup</h1><div class="notice">iOS and iPadOS require manual approval. A website cannot silently install and trust a root certificate.</div><p><a class="button" href="/download/mobileconfig">Download Configuration Profile</a><a class="button secondary" href="/download/cert">Download Certificate Only</a></p><ol><li>Download the configuration profile.</li><li>Open <strong>Settings</strong>.</li><li>Tap <strong>Profile Downloaded</strong>.</li><li>Install the profile.</li><li>Go to <strong>Settings → General → About → Certificate Trust Settings</strong>.</li><li>Enable full trust for the {{ cert_display_name }} certificate.</li><li>Restart Safari or your browser.</li></ol></div>{% include "_cert_card.html" %}{% endblock %}
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h1>iPhone / iPad setup</h1>
+  <div class="notice">iOS and iPadOS require manual approval. A website cannot silently install and trust a root certificate.</div>
+  <div class="actions">
+    <a class="button" href="/download/mobileconfig">Download Configuration Profile</a>
+    <a class="button secondary" href="/download/cert">Download Certificate Only</a>
+  </div>
+  <ol>
+    <li>Download the configuration profile.</li>
+    <li>Open <strong>Settings</strong>.</li>
+    <li>Tap <strong>Profile Downloaded</strong>.</li>
+    <li>Install the profile.</li>
+    <li>Go to <strong>Settings → General → About → Certificate Trust Settings</strong>.</li>
+    <li>Enable full trust for the {{ cert_display_name }} certificate.</li>
+    <li>Restart Safari or your browser.</li>
+  </ol>
+</div>
+{% include "_cert_card.html" %}
+{% endblock %}
