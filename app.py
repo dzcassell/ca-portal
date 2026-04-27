@@ -5,6 +5,7 @@ import hashlib
 import os
 import textwrap
 import uuid
+from functools import lru_cache
 from pathlib import Path
 from xml.sax.saxutils import escape
 
@@ -72,31 +73,63 @@ PLATFORM_OPTIONS = {
 }
 
 
+def cert_cache_key() -> tuple[str, int, int]:
+    stat = CERT_PATH.stat()
+    return str(CERT_PATH), stat.st_mtime_ns, stat.st_size
+
+
+@lru_cache(maxsize=4)
+def cert_material(path: str, mtime_ns: int, size: int) -> dict[str, object]:
+    del mtime_ns, size
+    raw = Path(path).read_bytes()
+    try:
+        cert = x509.load_pem_x509_certificate(raw, default_backend())
+    except ValueError:
+        cert = x509.load_der_x509_certificate(raw, default_backend())
+
+    der = cert.public_bytes(serialization.Encoding.DER)
+    return {
+        "raw": raw,
+        "der": der,
+        "openssl_inform": "PEM" if raw.lstrip().startswith(b"-----BEGIN") else "DER",
+        "sha256_hex": hashlib.sha256(der).hexdigest().upper(),
+        "info": {
+            "subject": cert.subject.rfc4514_string(),
+            "issuer": cert.issuer.rfc4514_string(),
+            "serial": format(cert.serial_number, "X"),
+            "not_before": cert.not_valid_before_utc.strftime("%Y-%m-%d %H:%M:%S %Z"),
+            "not_after": cert.not_valid_after_utc.strftime("%Y-%m-%d %H:%M:%S %Z"),
+            "sha256": colon_fingerprint(hashlib.sha256(der).digest()),
+            "sha1": colon_fingerprint(hashlib.sha1(der).digest()),
+        },
+    }
+
+
+def current_cert_material() -> dict[str, object]:
+    return cert_material(*cert_cache_key())
+
+
 def load_cert_bytes() -> bytes:
-    return CERT_PATH.read_bytes()
+    return current_cert_material()["raw"]
 
 
 def cert_openssl_inform() -> str:
-    if load_cert_bytes().lstrip().startswith(b"-----BEGIN"):
-        return "PEM"
-    return "DER"
+    return current_cert_material()["openssl_inform"]
 
 
 def load_cert() -> x509.Certificate:
     raw = load_cert_bytes()
-    try:
+    if cert_openssl_inform() == "PEM":
         return x509.load_pem_x509_certificate(raw, default_backend())
-    except ValueError:
-        return x509.load_der_x509_certificate(raw, default_backend())
+    return x509.load_der_x509_certificate(raw, default_backend())
 
 
 def cert_der_bytes() -> bytes:
-    cert = load_cert()
-    return cert.public_bytes(serialization.Encoding.DER)
+    return current_cert_material()["der"]
 
 
 def cert_sha256_hex() -> str:
-    return hashlib.sha256(cert_der_bytes()).hexdigest().upper()
+    return current_cert_material()["sha256_hex"]
 
 
 def colon_fingerprint(raw_digest: bytes) -> str:
@@ -104,17 +137,7 @@ def colon_fingerprint(raw_digest: bytes) -> str:
 
 
 def cert_info() -> dict[str, str]:
-    cert = load_cert()
-    der = cert.public_bytes(serialization.Encoding.DER)
-    return {
-        "subject": cert.subject.rfc4514_string(),
-        "issuer": cert.issuer.rfc4514_string(),
-        "serial": format(cert.serial_number, "X"),
-        "not_before": cert.not_valid_before_utc.strftime("%Y-%m-%d %H:%M:%S %Z"),
-        "not_after": cert.not_valid_after_utc.strftime("%Y-%m-%d %H:%M:%S %Z"),
-        "sha256": colon_fingerprint(hashlib.sha256(der).digest()),
-        "sha1": colon_fingerprint(hashlib.sha1(der).digest()),
-    }
+    return dict(current_cert_material()["info"])
 
 
 def platform_hint(user_agent: str) -> str:
@@ -255,6 +278,11 @@ def download_cert():
 def healthz():
     load_cert()
     return {"status": "ok", "certificate": CERT_FILENAME}
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return Response(status=204)
 
 
 @app.route("/download/windows.ps1")

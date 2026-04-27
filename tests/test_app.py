@@ -1,6 +1,6 @@
 import unittest
 
-from app import app, cert_sha256_hex
+from app import app, cert_material, cert_sha256_hex
 
 
 class PortalSmokeTests(unittest.TestCase):
@@ -24,6 +24,12 @@ class PortalSmokeTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["status"], "ok")
+
+    def test_favicon_returns_fast_empty_response(self):
+        response = self.client.get("/favicon.ico")
+
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.get_data(), b"")
 
     def test_generated_helpers_verify_certificate_fingerprint(self):
         expected = cert_sha256_hex()
@@ -77,6 +83,18 @@ class PortalSmokeTests(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn("install did not complete successfully", body)
         self.assertIn("Contact", body)
+
+    def test_verify_reuses_cached_certificate_material(self):
+        cert_material.cache_clear()
+
+        first = self.client.get("/verify")
+        second = self.client.get("/verify")
+        cache_info = cert_material.cache_info()
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(cache_info.misses, 1)
+        self.assertGreaterEqual(cache_info.hits, 1)
 
     def test_internal_errors_show_helpdesk_page(self):
         original = app.view_functions["healthz"]
