@@ -46,6 +46,23 @@ class PortalSmokeTests(unittest.TestCase):
                     self.assertIn(expected.lower(), body.lower())
                 self.assertIn("attachment", response.headers["Content-Disposition"])
 
+    def test_windows_helper_installs_to_local_machine_root(self):
+        response = self.client.get("/download/windows.ps1")
+        body = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Cert:\\LocalMachine\\Root", body)
+        self.assertIn("Administrator", body)
+        self.assertIn("Local Computer Trusted Root", body)
+
+    def test_windows_bootstrapper_requests_elevation(self):
+        response = self.client.get("/download/windows.cmd")
+        body = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Verb RunAs", body)
+        self.assertIn("administrator approval", body)
+
     def test_mobileconfig_downloads_profile(self):
         response = self.client.get("/download/mobileconfig")
 

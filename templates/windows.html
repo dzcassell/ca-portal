@@ -2,7 +2,7 @@
 {% block content %}
 <div class="card">
   <h1>Windows setup</h1>
-  <p class="lede">Use the Windows installer for the fastest path. It downloads this portal's PowerShell helper, verifies the certificate fingerprint, imports the certificate into your current user's Trusted Root store, and opens the verification page.</p>
+  <p class="lede">Use the Windows installer for the fastest path. It downloads this portal's PowerShell helper, asks for administrator approval, verifies the certificate fingerprint, imports the certificate into the Local Computer Trusted Root store, and opens the verification page.</p>
   <div class="actions">
     <a class="button" href="/download/windows.cmd">Download Windows Installer</a>
     <a class="button secondary" href="/download/windows.ps1">Download PowerShell Helper</a>
@@ -12,7 +12,7 @@
   <ol>
     <li>Download the Windows installer.</li>
     <li>Open the downloaded <code>windows.cmd</code> file.</li>
-    <li>Approve the Windows prompts.</li>
+    <li>Approve the administrator prompt.</li>
   </ol>
   <h2>PowerShell helper</h2>
   <pre>powershell -ExecutionPolicy Bypass -File .\windows.ps1</pre>
@@ -21,7 +21,7 @@
     <li>Download the certificate.</li>
     <li>Double-click the file.</li>
     <li>Select <strong>Install Certificate</strong>.</li>
-    <li>Choose <strong>Current User</strong>.</li>
+    <li>Choose <strong>Local Machine</strong>.</li>
     <li>Select <strong>Place all certificates in the following store</strong>.</li>
     <li>Choose <strong>Trusted Root Certification Authorities</strong>.</li>
     <li>Finish and accept the security warning.</li>

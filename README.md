@@ -124,9 +124,13 @@ Script downloads are generated dynamically so the install helpers use the same b
 
 ### Windows
 
-The primary Windows download is `windows.cmd`, a small bootstrapper that downloads and runs the PowerShell helper from this portal. This gives users a familiar double-click flow while keeping the certificate verification and install logic in the generated PowerShell script.
+The primary Windows download is `windows.cmd`, a small bootstrapper that downloads and runs the PowerShell helper from this portal with administrator approval. This gives users a familiar double-click flow while keeping the certificate verification and install logic in the generated PowerShell script.
 
-The PowerShell helper downloads the certificate, verifies the SHA-256 fingerprint, and imports the certificate into the current user's Trusted Root Certification Authorities store.
+The PowerShell helper downloads the certificate, verifies the SHA-256 fingerprint, and imports the certificate into the Local Computer Trusted Root Certification Authorities store. In MMC, this is:
+
+```text
+Console Root -> Certificates (Local Computer) -> Trusted Root Certification Authorities -> Certificates
+```
 
 Manual installation is also documented in the UI.
 

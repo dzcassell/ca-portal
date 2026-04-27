@@ -261,14 +261,19 @@ def healthz():
 def windows_script():
     script = f"""
     # Installs the Cato/company TLS inspection root certificate into the
-    # current user's Trusted Root Certification Authorities store.
+    # Local Computer Trusted Root Certification Authorities store.
     # This is explicit and user-visible; it does not attempt stealth installation.
 
     $ErrorActionPreference = "Stop"
     $CertUrl = "{base_url()}/download/cert"
     $ExpectedSha256 = "{cert_sha256_hex()}"
     $CertPath = Join-Path $env:TEMP "{CERT_FILENAME}"
-    $StoreLocation = "Cert:\\CurrentUser\\Root"
+    $StoreLocation = "Cert:\\LocalMachine\\Root"
+
+    $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+    if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {{
+      throw "Administrator approval is required to install the certificate for the local computer."
+    }}
 
     Write-Host "Downloading certificate from $CertUrl ..."
     Invoke-WebRequest -Uri $CertUrl -OutFile $CertPath
@@ -285,8 +290,14 @@ def windows_script():
     Write-Host "Thumbprint: $($cert.Thumbprint)"
     Write-Host "Not After:  $($cert.NotAfter)"
 
-    Write-Host "Installing certificate into CurrentUser Trusted Root store..."
+    Write-Host "Installing certificate into Local Computer Trusted Root store..."
     Import-Certificate -FilePath $CertPath -CertStoreLocation $StoreLocation | Out-Null
+
+    $installed = Get-ChildItem -Path $StoreLocation | Where-Object {{ $_.Thumbprint -eq $cert.Thumbprint }}
+    if (-not $installed) {{
+      throw "The certificate was not found in the Local Computer Trusted Root store after import."
+    }}
+
     Write-Host "Done. Restart your browser."
     Write-Host "Opening verification page..."
     Start-Process "{base_url()}/verify"
@@ -302,6 +313,7 @@ def windows_cmd():
 
     set "SCRIPT_URL={base_url()}/download/windows.ps1"
     set "SCRIPT_PATH=%TEMP%\\cato-cert-install.ps1"
+    set "ELEVATE_PATH=%TEMP%\\cato-cert-elevate.ps1"
 
     echo Downloading the Windows certificate installer...
     powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri '%SCRIPT_URL%' -OutFile '%SCRIPT_PATH%'"
@@ -312,18 +324,23 @@ def windows_cmd():
       exit /b 1
     )
 
-    echo Running the certificate installer...
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_PATH%"
+    echo Requesting administrator approval...
+    > "%ELEVATE_PATH%" echo $scriptPath = '%SCRIPT_PATH%'
+    >> "%ELEVATE_PATH%" echo $p = Start-Process -FilePath powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',$scriptPath) -Verb RunAs -PassThru -Wait
+    >> "%ELEVATE_PATH%" echo exit $p.ExitCode
+
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ELEVATE_PATH%"
     set "INSTALL_RESULT=%ERRORLEVEL%"
 
     echo.
     if not "%INSTALL_RESULT%"=="0" (
-      echo Install failed. Leave this window open and contact support: {SUPPORT_EMAIL}
+      echo Install failed or administrator approval was cancelled.
+      echo Leave this window open and contact support: {SUPPORT_EMAIL}
       pause
       exit /b %INSTALL_RESULT%
     )
 
-    echo Certificate install completed.
+    echo Certificate install completed for the local computer.
     echo Restart browsers that were already open.
     pause
     """
